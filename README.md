@@ -1,5 +1,11 @@
 # MailAuth
 
+[![CI](https://github.com/tomasz-tomczyk/mail_auth/actions/workflows/ci.yml/badge.svg)](https://github.com/tomasz-tomczyk/mail_auth/actions/workflows/ci.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/mail_auth.svg)](https://hex.pm/packages/mail_auth)
+[![Hexdocs.pm](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/mail_auth/)
+[![Hex.pm downloads](https://img.shields.io/hexpm/dt/mail_auth.svg)](https://hex.pm/packages/mail_auth)
+[![License](https://img.shields.io/hexpm/l/mail_auth.svg)](https://github.com/tomasz-tomczyk/mail_auth/blob/main/LICENSE)
+
 Checks whether an email really came from who it says. MailAuth verifies DKIM signatures, SPF and DMARC, signs mail with DKIM, and reads and writes `Authentication-Results:` headers. It works on mail received over SMTP and on mail read later over IMAP.
 
 | Standard | What | Here |
