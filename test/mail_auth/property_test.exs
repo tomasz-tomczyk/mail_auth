@@ -11,6 +11,7 @@ defmodule MailAuth.PropertyTest do
   import MailAuth.Test.Helpers
 
   alias MailAuth.DKIM.Canonical
+  alias MailAuth.Test.OldCanonical
 
   @max_ms 1000
 
@@ -152,5 +153,85 @@ defmodule MailAuth.PropertyTest do
       signed = sign(raw, "example.com", canonicalization: canonicalization)
       assert [%{result: :pass}] = MailAuth.DKIM.verify(signed, static(key_record("example.com")))
     end
+  end
+
+  # The streaming body hash against the canonicalization of 0.1.0, which
+  # built the whole canonical body from a normalized copy.
+  describe "body canonicalization matches 0.1.0" do
+    property "hash, length and l=" do
+      check all(body <- mail_body(), limit_pick <- one_of([constant(nil), integer(0..100)])) do
+        for algorithm <- [:simple, :relaxed], hash <- [:sha, :sha256] do
+          expected = OldCanonical.body(OldCanonical.normalize(body), algorithm)
+          assert Canonical.body(body, algorithm) == expected
+
+          # A share of the length, past the end at 100.
+          limit = limit_pick && div(limit_pick * (byte_size(expected) + 2), 100)
+
+          case Canonical.body_hash(body, algorithm, hash, limit) do
+            {:ok, digest, length} ->
+              hashed = if limit, do: binary_part(expected, 0, limit), else: expected
+              assert length == byte_size(hashed)
+              assert digest == :crypto.hash(hash, hashed)
+
+            {:error, :body_length_exceeds} ->
+              assert limit > byte_size(expected)
+          end
+        end
+      end
+    end
+
+    property "header fields and body split" do
+      check all(head <- mail_body(), body <- mail_body(), sep <- member_of(["\r\n", "\n"])) do
+        raw = head <> sep <> body
+        normalized = OldCanonical.normalize(raw)
+
+        case MailAuth.Message.parse(raw) do
+          {:ok, msg} ->
+            {:ok, old} = OldCanonical.parse(normalized)
+            assert msg.headers == old.headers
+            assert OldCanonical.normalize(msg.body) == old.body
+            assert msg.bare_lf == OldCanonical.bare_lf?(raw, msg.body)
+
+          {:error, :headers_too_large} ->
+            assert {:error, :headers_too_large} = OldCanonical.parse(normalized)
+        end
+      end
+    end
+  end
+
+  # Bodies made of the bytes canonicalization cares about. Some repeat a
+  # piece many times, to cross the 64 KB write size and the 4096-CRLF
+  # blocks.
+  defp mail_body do
+    piece =
+      list_of(
+        member_of([
+          " ",
+          "\t",
+          "  \t ",
+          "\r\n",
+          "\n",
+          "\r",
+          "\r\r\n",
+          "a",
+          "bc",
+          " d",
+          "\r\n\r\n",
+          "\n\n"
+        ]),
+        max_length: 30
+      )
+      |> map(&Enum.join/1)
+
+    one_of([
+      piece,
+      binary(max_length: 40),
+      map({piece, integer(1..12_000), piece}, fn {a, n, b} ->
+        String.duplicate(a, if(a == "", do: 0, else: div(n, max(byte_size(a), 1)) + 1)) <> b
+      end),
+      map({piece, integer(1..40_000), member_of(["\n", "\r\n", " \r\n"]), piece}, fn
+        {a, n, eol, b} -> a <> String.duplicate(eol, n) <> b
+      end)
+    ])
   end
 end
