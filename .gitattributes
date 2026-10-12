@@ -1,0 +1,3 @@
+# Test messages and fixtures are kept byte for byte: line endings matter to DKIM.
+*.eml -text
+test/fixtures/** -text
