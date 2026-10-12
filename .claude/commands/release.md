@@ -59,7 +59,7 @@ git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-This starts `release.yml`. It checks that the tag matches `@version`, that the changelog section is dated, and that the commit is on `main` with passing CI. Then it runs the CI jobs again on the tag.
+This starts `release.yml`. It checks that the tag matches `@version`, that the changelog section is dated, and that the commit is on `main` with passing CI. It does not run the tests again: the commit already passed `ci.yml` on `main`.
 
 ## 6. Approve the publish
 

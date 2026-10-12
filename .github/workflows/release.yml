@@ -48,12 +48,10 @@ jobs:
             exit 1
           fi
 
-  test:
-    needs: check
-    uses: ./.github/workflows/ci.yml
-
+  # The check above requires a passing ci.yml run on this commit, so the
+  # tests are not run again here.
   publish:
-    needs: [check, test]
+    needs: check
     runs-on: ubuntu-24.04
     environment: hex
     env:
