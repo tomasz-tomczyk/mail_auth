@@ -63,4 +63,6 @@ mix docs --warnings-as-errors
 
 ## Releases
 
+Run `/release X.Y.Z` (`.claude/commands/release.md`) to make a release. It walks through the steps below.
+
 `@version` in `mix.exs` is the only place the version is written. The README's dependency line (`~> MAJOR.MINOR`) is checked by a test. A release needs a `## X.Y.Z - YYYY-MM-DD` section in `CHANGELOG.md`; `release.yml` checks it.
