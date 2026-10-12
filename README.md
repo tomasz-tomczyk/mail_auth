@@ -207,11 +207,3 @@ mix mail_auth.gen_key --domain example.com --selector s1 [--ed25519]
 ## Telemetry
 
 MailAuth emits `:telemetry` spans for `[:mail_auth, :authenticate]`, `[:mail_auth, :dkim, :verify]`, `[:mail_auth, :dmarc]`, `[:mail_auth, :spf]` and `[:mail_auth, :dns, :lookup]`, with the results and the time taken. They never include message content or keys.
-
-## Credits
-
-The DKIM code is a port of [go-msgauth](https://github.com/emersion/go-msgauth) (MIT). Its notice is in `LICENSE`.
-
-## License
-
-MIT. See `LICENSE`.
