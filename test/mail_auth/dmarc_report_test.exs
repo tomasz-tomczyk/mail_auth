@@ -54,6 +54,22 @@ defmodule MailAuth.DMARC.ReportTest do
     assert {:error, :doctype_not_allowed} = Report.parse(xml)
   end
 
+  test "a zip that lies about its size is still capped" do
+    big = :binary.copy(<<"<a/>">>, 13 * 1024 * 1024 + 1)
+    {:ok, {_, zip}} = :zip.create(~c"r.zip", [{~c"r.xml", big}], [:memory])
+
+    # Patch the uncompressed size, in the local header and the central
+    # directory, to claim 1 KB.
+    lied = :binary.replace(zip, <<byte_size(big)::little-32>>, <<1024::little-32>>, [:global])
+    assert lied != zip
+    assert {:error, :too_large} = Report.parse(lied)
+  end
+
+  test "a stored zip entry" do
+    {:ok, {_, zip}} = :zip.create(~c"r.zip", [{~c"r.xml", @xml}], [:memory, {:compress, []}])
+    assert {:ok, %Report{records: [_]}} = Report.parse(zip)
+  end
+
   test "too large once uncompressed" do
     gzip = :zlib.gzip(:binary.copy(<<"<a/>">>, 13 * 1024 * 1024 + 1))
     assert byte_size(gzip) < 1_000_000
