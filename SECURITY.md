@@ -4,7 +4,7 @@
 
 Please report security problems privately, with GitHub's private vulnerability reporting: open the repository's **Security** tab and choose **Report a vulnerability**. Don't open a public issue.
 
-You will get an answer within a week. A fix is released for the newest minor version, with a GitHub security advisory and an entry in the Erlang Ecosystem Foundation's advisory database.
+A fix is released for the newest minor version, with a GitHub security advisory and an entry in the Erlang Ecosystem Foundation's advisory database.
 
 ## What counts
 
