@@ -1,7 +1,7 @@
 """Signs and verifies messages with dkimpy, for the interop CI job.
 
     python dkimpy_check.py verify MESSAGE DNS_FILE
-    python dkimpy_check.py sign MESSAGE KEY DOMAIN SELECTOR [rsa|ed25519]
+    python dkimpy_check.py sign MESSAGE KEY DOMAIN SELECTOR [rsa|ed25519] [header/body]
 
 DNS_FILE has one record per line, `name TYPE value`, the format of
 `mix mail_auth.verify --dns-file`. For Ed25519, KEY is PEM (PKCS#8) or the base64 seed.
@@ -54,7 +54,7 @@ def verify(message_path, dns_path):
     return 0
 
 
-def sign(message_path, key_path, domain, selector, kind="rsa"):
+def sign(message_path, key_path, domain, selector, kind="rsa", canonicalization="relaxed/relaxed"):
     with open(message_path, "rb") as f:
         message = f.read()
     with open(key_path, "rb") as f:
@@ -69,7 +69,7 @@ def sign(message_path, key_path, domain, selector, kind="rsa"):
         selector.encode(),
         domain.encode(),
         key,
-        canonicalize=(b"relaxed", b"relaxed"),
+        canonicalize=tuple(c.encode() for c in canonicalization.split("/")),
         include_headers=[b"from", b"to", b"subject", b"date", b"message-id"],
         signature_algorithm=b"ed25519-sha256" if kind == "ed25519" else b"rsa-sha256",
     )

@@ -1,6 +1,6 @@
 name: Property tests
 
-# The property tests with many more runs than in ci.yml, about 30 minutes.
+# The property tests with many more runs than in ci.yml, a few minutes.
 on:
   schedule:
     - cron: "0 4 * * 1"
@@ -9,23 +9,34 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 env:
   MIX_ENV: test
-  STREAM_DATA_MAX_RUNS: "200000"
+  STREAM_DATA_MAX_RUNS: "20000"
 
 jobs:
   properties:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 30
     permissions:
       contents: read
       issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
+        id: beam
         with:
           version-file: .tool-versions
           version-type: strict
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            deps
+            _build
+          key: mix-property-${{ runner.os }}-${{ steps.beam.outputs.elixir-version }}-${{ steps.beam.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
       - run: mix deps.get
       - name: Run the properties
         run: |

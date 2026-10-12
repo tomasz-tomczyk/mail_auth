@@ -28,15 +28,15 @@ for message in "$here"/messages/*.eml; do
       echo -n "ours -> dkimpy  $name $key $canonicalization: "
       "$python" "$here/dkimpy_check.py" verify "$work/ours.eml" "$work/dns.txt"
     done
+
+    for kind in rsa ed25519; do
+      key="${kind%25519}"
+      "$python" "$here/dkimpy_check.py" sign "$message" "$work/$key.pem" example.com "$key" "$kind" \
+        "$canonicalization" > "$work/theirs.eml"
+      echo "dkimpy -> ours  $name $kind $canonicalization:"
+      mix mail_auth.verify "$work/theirs.eml" --dns-file "$work/dns.txt"
+    done
   done
-
-  "$python" "$here/dkimpy_check.py" sign "$message" "$work/rsa.pem" example.com rsa rsa > "$work/theirs.eml"
-  echo "dkimpy -> ours  $name rsa:"
-  mix mail_auth.verify "$work/theirs.eml" --dns-file "$work/dns.txt"
-
-  "$python" "$here/dkimpy_check.py" sign "$message" "$work/ed.pem" example.com ed ed25519 > "$work/theirs.eml"
-  echo "dkimpy -> ours  $name ed25519:"
-  mix mail_auth.verify "$work/theirs.eml" --dns-file "$work/dns.txt"
 done
 
 echo "All interop checks passed."
