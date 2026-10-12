@@ -49,15 +49,25 @@ defmodule MailAuth.DMARC.Report do
   def parse(xml) when is_binary(xml), do: parse_xml(xml)
 
   defp gunzip(data) do
+    case inflate_capped(data, 31) do
+      {:ok, xml} -> {:ok, xml}
+      {:error, :too_large} -> {:error, :too_large}
+      {:error, _} -> {:error, :invalid_gzip}
+    end
+  end
+
+  # Inflates while counting, so the cap holds whatever sizes the input
+  # claims. Window bits: 31 for gzip, -15 for the raw deflate of a zip entry.
+  defp inflate_capped(data, window_bits) do
     z = :zlib.open()
 
     try do
-      :ok = :zlib.inflateInit(z, 31)
+      :ok = :zlib.inflateInit(z, window_bits)
       inflate(z, :zlib.safeInflate(z, data), [], 0)
     rescue
-      _ -> {:error, :invalid_gzip}
+      _ -> {:error, :invalid}
     catch
-      _, _ -> {:error, :invalid_gzip}
+      _, _ -> {:error, :invalid}
     after
       :zlib.close(z)
     end
@@ -74,20 +84,38 @@ defmodule MailAuth.DMARC.Report do
       else: {:ok, IO.iodata_to_binary([acc | out])}
   end
 
-  defp unzip(zip) do
-    with {:ok, [_comment | entries]} <- :zip.list_dir(zip),
-         [{:zip_file, name, info, _, _, _} | _] <-
-           Enum.filter(entries, &match?({:zip_file, _, _, _, _, _}, &1)),
-         true <- elem(info, 1) <= @max_bytes,
-         {:ok, [{_, xml}]} <- :zip.unzip(zip, [:memory, {:file_list, [name]}]) do
-      if byte_size(xml) > @max_bytes, do: {:error, :too_large}, else: {:ok, xml}
-    else
-      false -> {:error, :too_large}
-      _ -> {:error, :invalid_zip}
+  # Reads the first entry from its local file header. The sizes in the header
+  # are not trusted: a deflated entry is inflated with the cap above.
+  defp unzip(
+         <<"PK", 3, 4, _version::16, _flags::little-16, method::little-16, _time::32, _crc::32,
+           compressed::little-32, _size::little-32, name_len::little-16, extra_len::little-16,
+           rest::binary>>
+       ) do
+    case rest do
+      <<_name::binary-size(^name_len), _extra::binary-size(^extra_len), data::binary>> ->
+        unzip_entry(method, compressed, data)
+
+      _ ->
+        {:error, :invalid_zip}
     end
-  rescue
-    _ -> {:error, :invalid_zip}
   end
+
+  defp unzip(_), do: {:error, :invalid_zip}
+
+  defp unzip_entry(8, _compressed, data) do
+    case inflate_capped(data, -15) do
+      {:ok, xml} -> {:ok, xml}
+      {:error, :too_large} -> {:error, :too_large}
+      {:error, _} -> {:error, :invalid_zip}
+    end
+  end
+
+  defp unzip_entry(0, compressed, _data) when compressed > @max_bytes, do: {:error, :too_large}
+
+  defp unzip_entry(0, compressed, data) when byte_size(data) >= compressed,
+    do: {:ok, binary_part(data, 0, compressed)}
+
+  defp unzip_entry(_method, _compressed, _data), do: {:error, :invalid_zip}
 
   defp parse_xml(xml) when byte_size(xml) > @max_bytes, do: {:error, :too_large}
 
