@@ -263,6 +263,13 @@ defmodule MailAuth.DMARCTest do
                evaluate("a@example.com", @records, [], spf: spf("example.com", :temperror))
     end
 
+    test "a DKIM check stopped by the deadline gives :deadline" do
+      timed_out = %DKIM.Result{result: :temperror, reason: :deadline, domain: "example.com"}
+
+      assert %{result: :temperror, reason: :deadline} =
+               evaluate("a@example.com", @records, [timed_out])
+    end
+
     test "a pass wins over a temperror" do
       assert %{result: :pass} =
                evaluate("a@example.com", @records, [

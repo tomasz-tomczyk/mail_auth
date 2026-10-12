@@ -294,28 +294,30 @@ defmodule MailAuth.DMARC do
     org = result.organizational_domain
 
     dkim =
-      for %{result: r, domain: d} <- dkim_results, r in [:pass, :temperror], is_binary(d) do
-        {:dkim, r, d, record.adkim}
+      for %{result: r, domain: d} = dkim <- dkim_results,
+          r in [:pass, :temperror],
+          is_binary(d) do
+        {:dkim, r, Map.get(dkim, :reason), d, record.adkim}
       end
 
     spf_candidates =
       case spf do
         %{result: r, domain: d} when r in [:pass, :temperror] and is_binary(d) ->
-          [{:spf, r, Domain.to_ascii!(d), record.aspf}]
+          [{:spf, r, Map.get(spf, :reason), Domain.to_ascii!(d), record.aspf}]
 
         _ ->
           []
       end
 
     {checked, _walks} =
-      Enum.map_reduce(dkim ++ spf_candidates, walks, fn {method, r, d, mode}, walks ->
+      Enum.map_reduce(dkim ++ spf_candidates, walks, fn {method, r, reason, d, mode}, walks ->
         {aligned, walks} = aligned?(d, from, org, mode, opts, walks)
 
         status =
           case {r, aligned} do
             {:pass, true} -> :aligned
-            {:pass, :error} -> :temp
-            {:temperror, true} -> :temp
+            {:pass, {:error, walk_reason}} -> {:temp, walk_reason}
+            {:temperror, true} -> {:temp, reason}
             _ -> :not_aligned
           end
 
@@ -339,8 +341,15 @@ defmodule MailAuth.DMARC do
       aligned_by != [] ->
         %{result | result: :pass, disposition: :none}
 
-      Enum.any?(checked, fn {_, s, _} -> s == :temp end) ->
-        %{result | result: :temperror, reason: :dns_error}
+      temp = Enum.find(checked, &match?({_, {:temp, _}, _}, &1)) ->
+        # :deadline when the call ran out of time, else :dns_error.
+        {_, {:temp, reason}, _} = temp
+
+        %{
+          result
+          | result: :temperror,
+            reason: if(reason == :deadline, do: :deadline, else: :dns_error)
+        }
 
       true ->
         %{result | result: :fail, reason: :not_aligned, disposition: disposition(result)}
@@ -370,7 +379,7 @@ defmodule MailAuth.DMARC do
       true ->
         case walk(domain, opts, walks) do
           {:ok, found, walks} -> {organizational(found, domain, opts) == org, walks}
-          {:error, _reason, walks} -> {:error, walks}
+          {:error, reason, walks} -> {{:error, reason}, walks}
         end
     end
   end
