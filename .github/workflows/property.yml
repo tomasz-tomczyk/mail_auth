@@ -47,14 +47,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          seed="$(grep -oE 'seed: [0-9]+' property.log | head -1 || true)"
+          seed="$(grep -oE 'seed: [0-9]+' property.log | head -1 | grep -oE '[0-9]+' || true)"
           {
-            echo "The weekly property run failed ($seed)."
+            echo "The weekly property run failed (seed $seed)."
             echo
-            echo "Run it again with \`mix test test/mail_auth/property_test.exs --$seed\`, and turn the input below into an ordinary test."
+            echo "Run it again with \`STREAM_DATA_MAX_RUNS=$STREAM_DATA_MAX_RUNS mix test test/mail_auth/property_test.exs --seed $seed\`, and turn the failing input below into an ordinary test."
             echo
             echo '```'
-            grep -A 30 'failed with generated values' property.log | head -200
+            grep -E -A 30 '^ +[0-9]+\) property' property.log | head -200
             echo '```'
             echo
             echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

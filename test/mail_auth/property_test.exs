@@ -4,6 +4,10 @@ defmodule MailAuth.PropertyTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
 
+  # Long runs (STREAM_DATA_MAX_RUNS) take more than ExUnit's default 60
+  # seconds per test. The workflow has its own time limit.
+  @moduletag timeout: :infinity
+
   import MailAuth.Test.Helpers
 
   alias MailAuth.DKIM.Canonical
