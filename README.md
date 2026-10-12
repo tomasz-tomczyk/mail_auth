@@ -184,6 +184,7 @@ Results use the words of RFC 8601: `:pass`, `:fail`, `:neutral`, `:none`, `:temp
 | DKIM | `:weak_algorithm` | `rsa-sha1` passed because of `allow_sha1: true` |
 | SPF | `:ptr_used` | The record uses `ptr`, which RFC 7208 asks domains not to use |
 | DMARC | `:missing_policy`, `:invalid_policy` | The record has no valid `p=`, `sp=` or `np=` |
+| Message | `:bare_lf` | A header line ends in LF without CR. It is read as CRLF, but mail sent over SMTP uses CRLF |
 | Authentication-Results | `:no_authserv_id` | The header has no server name, so it is never trusted |
 | Authentication-Results | `:malformed` | Part of the header can't be read |
 

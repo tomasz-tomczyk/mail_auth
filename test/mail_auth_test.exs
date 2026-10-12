@@ -136,4 +136,27 @@ defmodule MailAuthTest do
     assert_received {^ref, [:mail_auth, :spf, :stop], _, %{result: :pass}}
     assert_received {^ref, [:mail_auth, :dns, :lookup, :stop], _, %{name: _, type: _, result: _}}
   end
+
+  describe "the :bare_lf warning" do
+    test "is set when a header line ends in bare LF" do
+      raw = message() |> String.replace("\r\n", "\n") |> sign("example.com")
+      result = MailAuth.authenticate(raw, static(@records))
+
+      assert :bare_lf in result.warnings
+      assert Result.dmarc_pass?(result)
+
+      raw =
+        String.replace(message(), "Subject: Is dinner ready?\r\n", "Subject: Is dinner ready?\n")
+
+      assert :bare_lf in MailAuth.authenticate(raw, static(@records)).warnings
+    end
+
+    test "is not set for CRLF mail, even with bare LF in the body" do
+      result = MailAuth.authenticate(sign(message(), "example.com"), static(@records))
+      refute :bare_lf in result.warnings
+
+      raw = message() <> "More.\nText.\n"
+      refute :bare_lf in MailAuth.authenticate(raw, static(@records)).warnings
+    end
+  end
 end
