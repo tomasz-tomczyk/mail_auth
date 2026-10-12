@@ -1,0 +1,37 @@
+name: Network tests
+
+# The Inet resolver against real DNS. It catches changes in how :inet_res
+# behaves on a new OTP. It never blocks a pull request: DNS on the internet
+# is not ours to control.
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  MIX_ENV: test
+
+jobs:
+  network:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
+        with:
+          version-file: .tool-versions
+          version-type: strict
+      - run: mix deps.get
+      - run: mix test --only network
+      - name: Open an issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Network test failure ($(date -u +%F))" \
+            --body "The weekly network test failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

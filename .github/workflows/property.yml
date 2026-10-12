@@ -1,0 +1,51 @@
+name: Property tests
+
+# The property tests with many more runs than in ci.yml, about 30 minutes.
+on:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  MIX_ENV: test
+  STREAM_DATA_MAX_RUNS: "200000"
+
+jobs:
+  properties:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
+        with:
+          version-file: .tool-versions
+          version-type: strict
+      - run: mix deps.get
+      - name: Run the properties
+        run: |
+          set -o pipefail
+          mix test test/mail_auth/property_test.exs 2>&1 | tee property.log
+      - name: Open an issue with the seed and the smallest failing input
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          seed="$(grep -oE 'seed: [0-9]+' property.log | head -1 || true)"
+          {
+            echo "The weekly property run failed ($seed)."
+            echo
+            echo "Run it again with \`mix test test/mail_auth/property_test.exs --$seed\`, and turn the input below into an ordinary test."
+            echo
+            echo '```'
+            grep -A 30 'failed with generated values' property.log | head -200
+            echo '```'
+            echo
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > issue.md
+          gh issue create --title "Property test failure ($(date -u +%F))" --body-file issue.md

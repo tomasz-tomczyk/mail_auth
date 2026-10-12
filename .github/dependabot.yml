@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: mix
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # Dev and test tools, patch and minor, in one pull request. Runtime
+      # dependencies (idna, telemetry) each get their own, so a change in
+      # what users install is looked at by itself.
+      dev-tools:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: pip
+    directory: /.github/interop
+    schedule:
+      interval: monthly
