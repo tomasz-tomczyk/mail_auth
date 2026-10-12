@@ -54,6 +54,14 @@ mix docs --warnings-as-errors
 - Every reason and warning in the README's tables needs a test. `test/readme_test.exs` fails otherwise.
 - A new parser gets a property test in `test/mail_auth/property_test.exs`.
 
+## Changelog
+
+- Every change users can see gets a line in the `## Unreleased` section of `CHANGELOG.md`, in the same pull request.
+- The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/): `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`, `### Security`.
+- Versions follow [Semantic Versioning](https://semver.org/). The library stays on 0.x until the API has been used against real mail.
+- Breaking changes come first in a version's section, each with what to change.
+- At release, `## Unreleased` becomes `## X.Y.Z - YYYY-MM-DD`.
+
 ## Releases
 
 `@version` in `mix.exs` is the only place the version is written. The README's dependency line (`~> MAJOR.MINOR`) is checked by a test. A release needs a `## X.Y.Z - YYYY-MM-DD` section in `CHANGELOG.md`; `release.yml` checks it.
