@@ -6,7 +6,6 @@ An Elixir library that checks DKIM, SPF and DMARC, signs mail with DKIM, and rea
 
 - **Conventional Commits** for every commit: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `perf:`, `chore:`, `ci:`, `build:`. Add a scope when it helps (`feat(dkim): ...`). A breaking change gets `!` and a `BREAKING CHANGE:` footer. One logical change per commit.
 - **Plain language** in docs, comments and commit messages. Short sentences, no filler.
-- **Don't name other projects** in code or docs, unless a license needs it. The go-msgauth notice in `LICENSE` is required by its MIT license.
 - **Follow the Elixir library guidelines** (https://hexdocs.pm/elixir/library-guidelines.html): no application environment config, no `Application` module, `~>` version requirements, dev and test deps marked `only:`.
 - **No credo, dialyxir or mix_audit.** Formatting, `--warnings-as-errors` and `mix hex.audit` are the checks.
 - **No NIFs.** Only `:crypto`, `:public_key`, `:inet_res`, `:xmerl`, `:zlib` and `:zip` from OTP, plus `idna` and `telemetry`.
