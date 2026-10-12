@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/tomasz-tomczyk/mail_auth/actions/workflows/ci.yml/badge.svg)](https://github.com/tomasz-tomczyk/mail_auth/actions/workflows/ci.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/mail_auth.svg)](https://hex.pm/packages/mail_auth)
-[![Hexdocs.pm](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/mail_auth/)
+[![Hexdocs.pm](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://mail-auth.hexdocs.pm/)
 [![Hex.pm downloads](https://img.shields.io/hexpm/dt/mail_auth.svg)](https://hex.pm/packages/mail_auth)
 [![License](https://img.shields.io/hexpm/l/mail_auth.svg)](https://github.com/tomasz-tomczyk/mail_auth/blob/main/LICENSE)
 

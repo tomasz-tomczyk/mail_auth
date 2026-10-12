@@ -86,9 +86,12 @@ jobs:
     steps:
       - name: HexDocs answers
         run: |
-          url="https://hexdocs.pm/mail_auth/${{ needs.check.outputs.version }}/"
+          # Follow redirects (HexDocs moved packages to <name>.hexdocs.pm) and
+          # check the page is this version's docs, not just any answer.
+          version="${{ needs.check.outputs.version }}"
+          url="https://hexdocs.pm/mail_auth/$version/readme.html"
           for _ in $(seq 1 30); do
-            if curl -fsS -o /dev/null "$url"; then exit 0; fi
+            if curl -fsSL "$url" | grep -q "MailAuth v$version"; then exit 0; fi
             sleep 10
           done
           echo "$url did not answer. Send the docs alone with: mix hex.publish docs --yes"
