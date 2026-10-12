@@ -10,7 +10,8 @@ defmodule MailAuth.Result do
     * `:spf`: the `MailAuth.SPF.Result`. Without a client IP it is `:none`,
       reason `:no_client_ip`
     * `:dmarc`: the `MailAuth.DMARC.Result`, or `nil` with `dmarc: false`
-    * `:warnings`: the warnings of all the checks, without repeats
+    * `:warnings`: the warnings of all the checks, without repeats, and
+      `:bare_lf` when a header line ends in LF without CR
   """
 
   @type t :: %__MODULE__{

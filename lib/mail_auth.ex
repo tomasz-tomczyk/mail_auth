@@ -20,6 +20,7 @@ defmodule MailAuth do
 
   `raw` is the message exactly as stored, headers and body. Lines end in
   CRLF; a message with bare LF line endings is read as if each LF were CRLF.
+  A bare LF in the header block adds the warning `:bare_lf` to the result.
 
   ## Options for every call
 
@@ -90,8 +91,11 @@ defmodule MailAuth do
           nil
       end
 
+    message_warnings = if match?({:ok, %{bare_lf: true}}, parsed), do: [:bare_lf], else: []
+
     warnings =
-      (Enum.flat_map(dkim, & &1.warnings) ++
+      (message_warnings ++
+         Enum.flat_map(dkim, & &1.warnings) ++
          ((spf && spf.warnings) || []) ++ ((dmarc && dmarc.warnings) || []))
       |> Enum.uniq()
 
