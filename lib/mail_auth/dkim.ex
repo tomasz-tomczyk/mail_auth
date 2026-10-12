@@ -383,14 +383,13 @@ defmodule MailAuth.DKIM do
 
   defp verify_crypto(msg, raw_sig, result, {hc, bc}, key, body_hash, signature, cache) do
     hash = hash_algorithm(result.algorithm)
-    {canonical_body, cache} = canonical_body(msg, bc, cache)
 
-    case limit_body(canonical_body, result.body_length) do
-      :error ->
+    case cached_body_hash(msg, {bc, hash, result.body_length}, cache) do
+      {:error, cache} ->
         {:error, :permerror, :body_length_exceeds, result, cache}
 
-      {:ok, signed_body} ->
-        if same_hash?(:crypto.hash(hash, signed_body), body_hash) do
+      {{:ok, computed}, cache} ->
+        if same_hash?(computed, body_hash) do
           data = header_data(msg, result.signed_headers, raw_sig, hc)
 
           if crypto_verify(result.algorithm, key.key, data, signature) do
@@ -406,20 +405,23 @@ defmodule MailAuth.DKIM do
 
   defp same_hash?(a, b), do: byte_size(a) == byte_size(b) and :crypto.hash_equals(a, b)
 
-  defp canonical_body(msg, algorithm, cache) do
-    case Map.fetch(cache, algorithm) do
-      {:ok, body} ->
-        {body, cache}
+  # Several signatures on one message often hash the body the same way, so
+  # the hash is kept for the rest of the message.
+  defp cached_body_hash(msg, {algorithm, hash, limit} = key, cache) do
+    case Map.fetch(cache, key) do
+      {:ok, computed} ->
+        {computed, cache}
 
       :error ->
-        body = Canonical.body(msg.body, algorithm)
-        {body, Map.put(cache, algorithm, body)}
+        computed =
+          case Canonical.body_hash(msg.body, algorithm, hash, limit) do
+            {:ok, digest, _length} -> {:ok, digest}
+            {:error, :body_length_exceeds} -> :error
+          end
+
+        {computed, Map.put(cache, key, computed)}
     end
   end
-
-  defp limit_body(body, nil), do: {:ok, body}
-  defp limit_body(body, l) when l <= byte_size(body), do: {:ok, binary_part(body, 0, l)}
-  defp limit_body(_body, _l), do: :error
 
   defp header_data(msg, signed_headers, raw_sig, hc) do
     picked = pick_headers(msg.headers, signed_headers)
@@ -533,7 +535,7 @@ defmodule MailAuth.DKIM do
          {:ok, {hc, bc}} <- sign_canonicalization(Keyword.get(opts, :canonicalization)),
          {:ok, header_names} <- sign_headers(opts),
          {:ok, msg} <- Message.parse(raw) do
-      body = Canonical.body(msg.body, bc)
+      {:ok, body_hash, body_length} = Canonical.body_hash(msg.body, bc, :sha256, nil)
       now = now(opts)
       names = expand_headers(msg, header_names, Keyword.get(opts, :oversign, @default_oversign))
 
@@ -547,9 +549,9 @@ defmodule MailAuth.DKIM do
           opts[:identity] && {"i", opts[:identity]},
           {"t", Integer.to_string(now)},
           opts[:expires_in] && {"x", Integer.to_string(now + opts[:expires_in])},
-          opts[:body_length] && {"l", Integer.to_string(byte_size(body))},
+          opts[:body_length] && {"l", Integer.to_string(body_length)},
           {"h", names},
-          {"bh", Base.encode64(:crypto.hash(:sha256, body))}
+          {"bh", Base.encode64(body_hash)}
         ]
         |> Enum.filter(& &1)
 
