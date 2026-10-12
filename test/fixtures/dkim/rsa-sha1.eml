@@ -1,0 +1,13 @@
+DKIM-Signature: v=1; a=rsa-sha1; c=relaxed/relaxed; d=example.com;
+ i=@example.com; q=dns/txt; s=s1; t=1791802751; h=from : to : subject;
+ bh=xm5+S+1pD83h2S7N/hIJHs4cack=;
+ b=sNnDCWTReTJPFK0foVgNHMrtEIr8Pr73kuMJyf7N4qPU8FVLVxGTXa3SVSUAsZi11gKRC
+ SU+7ZLKT6cs14sMotuyGKTMQosMmabYrXR6+dMshlEwFjwatFlTLVRUeay7hO5NdAbHJa4a
+ xzkdLSJV9U6sn/4dP3UpAMY8jEZeLms=
+From: Joe <joe@example.com>
+To: Suzie <suzie@example.net>
+Subject: Is dinner ready?
+Date: Fri, 11 Jul 2003 21:00:37 -0700
+Message-ID: <1@example.com>
+
+Hi.
