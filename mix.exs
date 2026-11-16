@@ -29,7 +29,7 @@ defmodule MailAuth.MixProject do
 
   defp deps do
     [
-      {:idna, "~> 7.1"},
+      {:idna, "~> 8.0"},
       {:telemetry, "~> 1.4"},
       {:stream_data, "~> 1.4", only: [:dev, :test]},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false}
